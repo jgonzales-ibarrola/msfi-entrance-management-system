@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id           String        @id
+  name         String
+  agency       String
+  department   String
+  employeeLogs EmployeeLog[]
+}
+
+model EmployeeLog {
+  id         Int       @id @default(autoincrement())
+  time_in    DateTime
+  time_out   DateTime?
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
