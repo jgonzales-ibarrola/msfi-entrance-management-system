@@ -8,10 +8,14 @@ datasource db {
 }
 
 model Employee {
-  id           String        @id
-  name         String
+  id           Int           @id @default(autoincrement())
+  emp_no       String        @unique
+  emp_name     String
+  date_hired   String
   agency       String
   department   String
+  status       String
+  reg_date     DateTime      @default(now())
   employeeLogs EmployeeLog[]
 }
 
@@ -19,6 +23,6 @@ model EmployeeLog {
   id         Int       @id @default(autoincrement())
   time_in    DateTime
   time_out   DateTime?
-  employeeId String
+  employeeId Int
   employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }

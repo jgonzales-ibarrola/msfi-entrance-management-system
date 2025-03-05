@@ -1,9 +1,13 @@
 -- CreateTable
 CREATE TABLE "Employee" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "emp_no" TEXT NOT NULL,
+    "emp_name" TEXT NOT NULL,
+    "date_hired" TEXT NOT NULL,
     "agency" TEXT NOT NULL,
     "department" TEXT NOT NULL,
+    "status" TEXT NOT NULL,
+    "reg_date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Employee_pkey" PRIMARY KEY ("id")
 );
@@ -13,10 +17,13 @@ CREATE TABLE "EmployeeLog" (
     "id" SERIAL NOT NULL,
     "time_in" TIMESTAMP(3) NOT NULL,
     "time_out" TIMESTAMP(3),
-    "employeeId" TEXT NOT NULL,
+    "employeeId" INTEGER NOT NULL,
 
     CONSTRAINT "EmployeeLog_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Employee_emp_no_key" ON "Employee"("emp_no");
 
 -- AddForeignKey
 ALTER TABLE "EmployeeLog" ADD CONSTRAINT "EmployeeLog_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
