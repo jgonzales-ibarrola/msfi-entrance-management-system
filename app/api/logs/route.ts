@@ -26,9 +26,8 @@ export async function POST(req: Request) {
 		const { employeeNo } = await req.json();
 		const now = new Date();
 		const today = new Date();
-		today.setHours(0, 0, 0, 0); // Normalize to start of the day
+		today.setHours(0, 0, 0, 0); // Start of the day
 
-		// Check if employee exists
 		const employee = await prisma.employee.findUnique({
 			where: { emp_no: employeeNo },
 		});
@@ -40,37 +39,41 @@ export async function POST(req: Request) {
 			);
 		}
 
-		// Find today's log entry
 		const existingLog = await prisma.employeeLog.findFirst({
 			where: {
 				employeeNo,
-				time_in: { gte: today }, // Fetch logs from today onwards
+				time_in: { gte: today }, // Fetch today's logs
 			},
 		});
 
 		if (!existingLog) {
-			// No log for today, create a new one with isRestricted = true
+			// First log-in of the day
 			const createLog = await prisma.employeeLog.create({
 				data: {
 					time_in: now,
 					employeeNo,
-					isRestricted: true, // Restrict logout initially
+					isRestricted: true, // Initially restrict logout
 				},
 			});
 
 			return NextResponse.json(createLog, { status: 201 });
 		}
 
-		// Restrict logout within 30 seconds
 		const thirtySecondsLater = new Date(
 			existingLog.time_in.getTime() + 30 * 1000
+		);
+		const remainingTime = Math.ceil(
+			(thirtySecondsLater.getTime() - now.getTime()) / 1000
 		);
 
 		if (existingLog.time_in && !existingLog.time_out) {
 			if (existingLog.isRestricted && now < thirtySecondsLater) {
-				// Employee tries to log out before 30s → Restrict
+				// Send remaining countdown time
 				return NextResponse.json(
-					{ message: "You must wait 30 seconds before logging out." },
+					{
+						message: `You must wait ${remainingTime} seconds before logging out.`,
+						remainingTime,
+					},
 					{ status: 403 }
 				);
 			}

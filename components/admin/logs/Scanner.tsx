@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { scannerSchema, TScannerFormSchema } from "@/lib/types/forms/scanner";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,37 +20,74 @@ import toast, { Toaster } from "react-hot-toast";
 
 const Scanner = () => {
 	const queryClient = useQueryClient();
-
 	const form = useForm<TScannerFormSchema>({
 		resolver: zodResolver(scannerSchema),
-		defaultValues: {
-			employeeNo: "",
-		},
+		defaultValues: { employeeNo: "" },
 	});
 
-	// Create a reference to the input field
 	const inputRef = useRef<HTMLInputElement>(null);
+	const [countdown, setCountdown] = useState<number | null>(null);
+	const countdownToastId = useRef<string | null>(null); // Store the toast ID
 
-	// Automatically refocus the input every 1 second
+	// Auto-refocus input every second
 	useEffect(() => {
 		const interval = setInterval(() => {
 			inputRef.current?.focus();
 		}, 1000);
-
-		return () => clearInterval(interval); // Cleanup interval on unmount
+		return () => clearInterval(interval);
 	}, []);
 
-	// Mutations
+	// Countdown logic (update existing toast)
+	useEffect(() => {
+		if (countdown !== null && countdown > 0) {
+			const timer = setTimeout(() => {
+				setCountdown(countdown - 1);
+
+				// Update the existing toast message
+				if (countdownToastId.current) {
+					toast.dismiss(countdownToastId.current); // Remove old toast
+					countdownToastId.current = toast.error(
+						`You must wait ${
+							countdown - 1
+						} seconds before logging out.`,
+						{ id: countdownToastId.current }
+					);
+				}
+			}, 1000);
+			return () => clearTimeout(timer);
+		} else {
+			// Clear toast when countdown finishes
+			if (countdownToastId.current) {
+				toast.dismiss(countdownToastId.current);
+				countdownToastId.current = null;
+			}
+		}
+	}, [countdown]);
+
 	const createEmployeeLogMutation = useMutation({
 		mutationFn: (values: { employeeNo: string }) =>
 			createEmployeeLog(values),
 		onSuccess: () => {
-			// Invalidate and refetch
 			queryClient.invalidateQueries({ queryKey: ["employeeLogs"] });
 		},
 		onError: (error: any) => {
 			if (error instanceof Error) {
-				toast.error(error.message);
+				const match = error.message.match(/(\d+) seconds/);
+				const remainingTime = match ? parseInt(match[1]) : 30;
+
+				if (remainingTime > 0) {
+					setCountdown(remainingTime);
+
+					// Show toast only if not already showing
+					if (!countdownToastId.current) {
+						countdownToastId.current = toast.error(
+							`You must wait ${remainingTime} seconds before logging out.`,
+							{ id: "countdown-toast" }
+						);
+					}
+				} else {
+					toast.error(error.message);
+				}
 			} else {
 				toast.error("An unexpected error occurred.");
 			}
@@ -58,9 +95,8 @@ const Scanner = () => {
 	});
 
 	const onSubmit = (values: TScannerFormSchema) => {
-		console.log(values);
-		form.reset(); // Reset input after scanning
-		inputRef.current?.focus(); // Ensure it refocuses after submission
+		form.reset();
+		inputRef.current?.focus();
 		createEmployeeLogMutation.mutate(values);
 	};
 
@@ -80,15 +116,15 @@ const Scanner = () => {
 								<FormLabel>Employee ID</FormLabel>
 								<FormControl>
 									<Input
-										{...field} // Spread field props
+										{...field}
 										onChange={(e) => {
 											const upperCaseValue =
-												e.target.value.toUpperCase(); // Convert input to uppercase
-											field.onChange(upperCaseValue); // Update form value
+												e.target.value.toUpperCase();
+											field.onChange(upperCaseValue);
 										}}
 										ref={(el) => {
-											field.ref(el); // Assign RHF ref
-											inputRef.current = el; // Assign our ref
+											field.ref(el);
+											inputRef.current = el;
 										}}
 										placeholder="(e.g FI0830)"
 										autoComplete="off"
