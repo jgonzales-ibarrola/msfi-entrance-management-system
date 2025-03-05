@@ -7,6 +7,9 @@ export async function GET() {
 			include: {
 				employee: true,
 			},
+			orderBy: {
+				time_in: "desc",
+			},
 		});
 
 		return NextResponse.json(logs);
