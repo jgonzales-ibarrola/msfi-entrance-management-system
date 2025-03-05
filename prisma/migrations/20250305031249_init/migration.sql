@@ -17,7 +17,7 @@ CREATE TABLE "EmployeeLog" (
     "id" SERIAL NOT NULL,
     "time_in" TIMESTAMP(3) NOT NULL,
     "time_out" TIMESTAMP(3),
-    "employeeId" INTEGER NOT NULL,
+    "employeeNo" TEXT NOT NULL,
 
     CONSTRAINT "EmployeeLog_pkey" PRIMARY KEY ("id")
 );
@@ -26,4 +26,4 @@ CREATE TABLE "EmployeeLog" (
 CREATE UNIQUE INDEX "Employee_emp_no_key" ON "Employee"("emp_no");
 
 -- AddForeignKey
-ALTER TABLE "EmployeeLog" ADD CONSTRAINT "EmployeeLog_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "Employee"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "EmployeeLog" ADD CONSTRAINT "EmployeeLog_employeeNo_fkey" FOREIGN KEY ("employeeNo") REFERENCES "Employee"("emp_no") ON DELETE CASCADE ON UPDATE CASCADE;

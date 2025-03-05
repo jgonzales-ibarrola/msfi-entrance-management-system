@@ -23,6 +23,6 @@ model EmployeeLog {
   id         Int       @id @default(autoincrement())
   time_in    DateTime
   time_out   DateTime?
-  employeeId Int
-  employee   Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeNo String
+  employee   Employee  @relation(fields: [employeeNo], references: [emp_no], onDelete: Cascade)
 }
