@@ -84,11 +84,13 @@ const DataTable = () => {
 							</tr>
 						) : (
 							employeeLogs?.map((employee) => {
-								const isIn = employee.time_in;
-								const formatDate = (dateString: string) => {
-									if (!dateString) return "N/A";
+								const isIn = employee.time_out;
+								const formatDate = (date: Date | null) => {
+									if (!date) return ""; // Handle null or undefined values
+									const parsedDate = new Date(date);
+									if (isNaN(parsedDate.getTime())) return ""; // Handle invalid dates
 									return format(
-										new Date(dateString),
+										parsedDate,
 										"yyyy-MM-dd - HH:mm:ss"
 									);
 								};
@@ -114,20 +116,15 @@ const DataTable = () => {
 											{employee.employee.department}
 										</td>
 										<td className="px-6 py-4">
-											{isIn ? "IN" : "OUT"}
+											{isIn ? "OUT" : "IN"}
 										</td>
 										<td className="px-6 py-4 flex items-center gap-2">
 											<div>
-												{formatDate(
-													employee.time_in.toString()
-												)}
+												{formatDate(employee.time_in)}
 											</div>
-											<span>-</span>
+											<span>|</span>
 											<div>
-												{formatDate(
-													employee.time_out?.toString() ??
-														"N/A"
-												)}
+												{formatDate(employee.time_out)}
 											</div>
 										</td>
 									</tr>
