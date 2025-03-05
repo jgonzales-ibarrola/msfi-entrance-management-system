@@ -22,9 +22,11 @@ export async function createEmployeeLog(values: { employeeNo: string }) {
 		body: JSON.stringify(values),
 	});
 
+	const data = await res.json(); // Extract JSON response
+
 	if (!res.ok) {
-		throw new Error("Having problem with server.");
+		throw new Error(data.message || "Something went wrong"); // Throw the error message from API
 	}
 
-	return res.json();
+	return data;
 }

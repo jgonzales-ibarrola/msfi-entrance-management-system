@@ -24,6 +24,7 @@ export async function GET() {
 export async function POST(req: Request) {
 	try {
 		const { employeeNo } = await req.json();
+		const now = new Date();
 		const today = new Date();
 		today.setHours(0, 0, 0, 0); // Normalize to start of the day
 
@@ -43,39 +44,52 @@ export async function POST(req: Request) {
 		const existingLog = await prisma.employeeLog.findFirst({
 			where: {
 				employeeNo,
-				time_in: { gte: today }, // Only fetch logs from today onwards
+				time_in: { gte: today }, // Fetch logs from today onwards
 			},
 		});
 
 		if (!existingLog) {
-			// No log for today, create a new one
+			// No log for today, create a new one with isRestricted = true
 			const createLog = await prisma.employeeLog.create({
 				data: {
-					time_in: new Date(),
+					time_in: now,
 					employeeNo,
+					isRestricted: true, // Restrict logout initially
 				},
 			});
 
 			return NextResponse.json(createLog, { status: 201 });
 		}
 
-		if (existingLog.time_in && existingLog.time_out) {
-			return NextResponse.json(
-				{ message: "Employee already logged today." },
-				{ status: 400 }
-			);
+		// Restrict logout within 30 seconds
+		const thirtySecondsLater = new Date(
+			existingLog.time_in.getTime() + 30 * 1000
+		);
+
+		if (existingLog.time_in && !existingLog.time_out) {
+			if (existingLog.isRestricted && now < thirtySecondsLater) {
+				// Employee tries to log out before 30s → Restrict
+				return NextResponse.json(
+					{ message: "You must wait 30 seconds before logging out." },
+					{ status: 403 }
+				);
+			}
+
+			// Allow logout and remove restriction
+			const updatedLog = await prisma.employeeLog.update({
+				where: { id: existingLog.id },
+				data: { time_out: now, isRestricted: false },
+				include: { employee: true },
+			});
+
+			return NextResponse.json(updatedLog, { status: 201 });
 		}
 
-		// If time_in exists but time_out is null, update time_out
-		const updatedLog = await prisma.employeeLog.update({
-			where: { id: existingLog.id },
-			data: { time_out: new Date() },
-			include: { employee: true },
-		});
-
-		return NextResponse.json(updatedLog, { status: 201 });
-	} catch (error: // eslint-disable next-line
-	any) {
+		return NextResponse.json(
+			{ message: "Employee already logged today." },
+			{ status: 400 }
+		);
+	} catch (error: any) {
 		return NextResponse.json(
 			{ message: `Failed to create logs. ${error.message}` },
 			{ status: 500 }

@@ -18,6 +18,7 @@ CREATE TABLE "EmployeeLog" (
     "time_in" TIMESTAMP(3) NOT NULL,
     "time_out" TIMESTAMP(3),
     "employeeNo" TEXT NOT NULL,
+    "isRestricted" BOOLEAN NOT NULL,
 
     CONSTRAINT "EmployeeLog_pkey" PRIMARY KEY ("id")
 );

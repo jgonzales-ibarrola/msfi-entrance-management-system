@@ -20,9 +20,10 @@ model Employee {
 }
 
 model EmployeeLog {
-  id         Int       @id @default(autoincrement())
-  time_in    DateTime
-  time_out   DateTime?
-  employeeNo String
-  employee   Employee  @relation(fields: [employeeNo], references: [emp_no], onDelete: Cascade)
+  id           Int       @id @default(autoincrement())
+  time_in      DateTime
+  time_out     DateTime?
+  employeeNo   String
+  isRestricted Boolean
+  employee     Employee  @relation(fields: [employeeNo], references: [emp_no], onDelete: Cascade)
 }

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Sidenav from "@/components/admin/logs/Sidenav";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,7 +13,9 @@ const PrivateLayout = ({ children }: { children: ReactNode }) => {
 				<div className="flex">
 					<Sidenav />
 
-					<main className="flex-1 bg-gray-100 p-4">{children}</main>
+					<main className="flex-1 bg-gray-100 p-4 overflow-hidden">
+						{children}
+					</main>
 				</div>
 			</QueryClientProvider>
 		</>

@@ -21,7 +21,7 @@ const DataTable = () => {
 	});
 
 	return (
-		<div>
+		<div className="overflow-y-scroll">
 			{/* Search filter */}
 			{/* Table */}
 

@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createEmployeeLog } from "@/app/services/employeeLogsService";
+import toast, { Toaster } from "react-hot-toast";
 
 const Scanner = () => {
 	const queryClient = useQueryClient();
@@ -47,6 +48,13 @@ const Scanner = () => {
 			// Invalidate and refetch
 			queryClient.invalidateQueries({ queryKey: ["employeeLogs"] });
 		},
+		onError: (error: any) => {
+			if (error instanceof Error) {
+				toast.error(error.message);
+			} else {
+				toast.error("An unexpected error occurred.");
+			}
+		},
 	});
 
 	const onSubmit = (values: TScannerFormSchema) => {
@@ -57,40 +65,43 @@ const Scanner = () => {
 	};
 
 	return (
-		<Form {...form}>
-			<form
-				onSubmit={form.handleSubmit(onSubmit)}
-				className="space-y-4 pb-4"
-			>
-				<FormField
-					control={form.control}
-					name="employeeNo"
-					render={({ field }) => (
-						<FormItem>
-							<FormLabel>Employee ID</FormLabel>
-							<FormControl>
-								<Input
-									{...field} // Spread field props
-									onChange={(e) => {
-										const upperCaseValue =
-											e.target.value.toUpperCase(); // Convert input to uppercase
-										field.onChange(upperCaseValue); // Update form value
-									}}
-									ref={(el) => {
-										field.ref(el); // Assign RHF ref
-										inputRef.current = el; // Assign our ref
-									}}
-									placeholder="(e.g FI0830)"
-									autoComplete="off"
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-				<Button type="submit">Scan</Button>
-			</form>
-		</Form>
+		<>
+			<Toaster />
+			<Form {...form}>
+				<form
+					onSubmit={form.handleSubmit(onSubmit)}
+					className="space-y-4 pb-4"
+				>
+					<FormField
+						control={form.control}
+						name="employeeNo"
+						render={({ field }) => (
+							<FormItem>
+								<FormLabel>Employee ID</FormLabel>
+								<FormControl>
+									<Input
+										{...field} // Spread field props
+										onChange={(e) => {
+											const upperCaseValue =
+												e.target.value.toUpperCase(); // Convert input to uppercase
+											field.onChange(upperCaseValue); // Update form value
+										}}
+										ref={(el) => {
+											field.ref(el); // Assign RHF ref
+											inputRef.current = el; // Assign our ref
+										}}
+										placeholder="(e.g FI0830)"
+										autoComplete="off"
+									/>
+								</FormControl>
+								<FormMessage />
+							</FormItem>
+						)}
+					/>
+					<Button type="submit">Scan</Button>
+				</form>
+			</Form>
+		</>
 	);
 };
 
