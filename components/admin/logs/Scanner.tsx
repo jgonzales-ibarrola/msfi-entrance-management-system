@@ -1,20 +1,11 @@
-'use client';
+"use client";
 
-import React from "react";
-
+import React, { useEffect, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { scannerSchema, TScannerFormSchema } from "@/lib/types/forms/scanner";
-
 import { Button } from "@/components/ui/button";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
 const Scanner = () => {
@@ -25,9 +16,23 @@ const Scanner = () => {
 		},
 	});
 
-	function onSubmit(values: TScannerFormSchema) {
+	// Create a reference to the input field
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	// Automatically refocus the input every 1 second
+	useEffect(() => {
+		const interval = setInterval(() => {
+			inputRef.current?.focus();
+		}, 1000);
+
+		return () => clearInterval(interval); // Cleanup interval on unmount
+	}, []);
+
+	const onSubmit = (values: TScannerFormSchema) => {
 		console.log(values);
-	}
+		form.reset(); // Reset input after scanning
+		inputRef.current?.focus(); // Ensure it refocuses after submission
+	};
 
 	return (
 		<Form {...form}>
@@ -39,7 +44,15 @@ const Scanner = () => {
 						<FormItem>
 							<FormLabel>Employee ID</FormLabel>
 							<FormControl>
-								<Input placeholder="(e.g FI0830)" {...field} />
+								<Input
+									{...field} // Spread field props
+									ref={(el) => {
+										field.ref(el); // Assign RHF ref
+										inputRef.current = el; // Assign our ref
+									}}
+									placeholder="(e.g FI0830)"
+									autoComplete="off"
+								/>
 							</FormControl>
 							<FormMessage />
 						</FormItem>
