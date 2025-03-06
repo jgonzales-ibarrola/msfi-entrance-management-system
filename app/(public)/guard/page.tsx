@@ -4,11 +4,15 @@ import React from "react";
 
 const GuardPage = () => {
 	return (
-		<>
-			<div className="flex gap-4">
+		<div className="flex h-screen">
+			{/* Fixed Sidebar */}
+			<div className="w-80 h-full text-white fixed">
 				<Sidenav />
+			</div>
 
-				<section className="flex-1 border border-black">
+			{/* Scrollable Content */}
+			<div className="ml-80 flex-1 overflow-y-auto h-screen p-4">
+				<section className="border border-black">
 					{/* Header */}
 					{/* Search Input */}
 					{/* Data Table */}
@@ -16,7 +20,7 @@ const GuardPage = () => {
 					{/* Pagination */}
 				</section>
 			</div>
-		</>
+		</div>
 	);
 };
 

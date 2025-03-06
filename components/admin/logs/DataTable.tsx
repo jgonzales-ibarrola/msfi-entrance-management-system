@@ -51,7 +51,7 @@ const DataTable = () => {
 							</th>
 						</tr>
 					</thead>
-					<tbody>
+					<tbody className="overflow-scroll">
 						{isLoading ? (
 							<tr className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200">
 								<th

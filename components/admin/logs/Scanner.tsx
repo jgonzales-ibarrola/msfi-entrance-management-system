@@ -26,70 +26,88 @@ const Scanner = () => {
 	});
 
 	const inputRef = useRef<HTMLInputElement>(null);
-	const [countdown, setCountdown] = useState<number | null>(null);
-	const countdownToastId = useRef<string | null>(null); // Store the toast ID
+	const [countdowns, setCountdowns] = useState<Record<string, number>>({});
+	const countdownIntervals = useRef<Record<string, NodeJS.Timeout>>({});
 
-	// Auto-refocus input every second
+	// Auto-refocus input field
 	useEffect(() => {
-		const interval = setInterval(() => {
-			inputRef.current?.focus();
-		}, 1000);
-		return () => clearInterval(interval);
+		const focusInput = () => inputRef.current?.focus();
+
+		// Focus on mount and when clicking anywhere
+		focusInput();
+		document.addEventListener("click", focusInput);
+
+		return () => document.removeEventListener("click", focusInput);
 	}, []);
 
-	// Countdown logic (update existing toast)
+	// Countdown logic per employee
 	useEffect(() => {
-		if (countdown !== null && countdown > 0) {
-			const timer = setTimeout(() => {
-				setCountdown(countdown - 1);
+		const intervalId = setInterval(() => {
+			setCountdowns((prev) => {
+				const updatedCountdowns = { ...prev };
+				Object.keys(updatedCountdowns).forEach((employeeNo) => {
+					if (updatedCountdowns[employeeNo] > 0) {
+						updatedCountdowns[employeeNo] -= 1;
+					} else {
+						delete updatedCountdowns[employeeNo]; // Remove when countdown reaches 0
+					}
+				});
+				return updatedCountdowns;
+			});
+		}, 1000);
 
-				// Update the existing toast message
-				if (countdownToastId.current) {
-					toast.dismiss(countdownToastId.current); // Remove old toast
-					countdownToastId.current = toast.error(
-						`You must wait ${
-							countdown - 1
-						} seconds before logging out.`,
-						{ id: countdownToastId.current }
-					);
-				}
-			}, 1000);
-			return () => clearTimeout(timer);
-		} else {
-			// Clear toast when countdown finishes
-			if (countdownToastId.current) {
-				toast.dismiss(countdownToastId.current);
-				countdownToastId.current = null;
-			}
-		}
-	}, [countdown]);
+		return () => clearInterval(intervalId);
+	}, []);
 
+	// Handle mutation (log scanning)
 	const createEmployeeLogMutation = useMutation({
 		mutationFn: (values: { employeeNo: string }) =>
 			createEmployeeLog(values),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["employeeLogs"] });
+			toast.success("Log recorded successfully!");
 		},
-		onError: (error: any) => {
+		onError: (error: any, variables) => {
+			const { employeeNo } = variables;
+
 			if (error instanceof Error) {
+				// Check if the error message contains a countdown time
 				const match = error.message.match(/(\d+) seconds/);
-				const remainingTime = match ? parseInt(match[1]) : 30;
-
-				if (remainingTime > 0) {
-					setCountdown(remainingTime);
-
-					// Show toast only if not already showing
-					if (!countdownToastId.current) {
-						countdownToastId.current = toast.error(
-							`You must wait ${remainingTime} seconds before logging out.`,
-							{ id: "countdown-toast" }
-						);
-					}
-				} else {
-					toast.error(error.message);
+				if (match) {
+					const remainingTime = parseInt(match[1]);
+					setCountdowns((prev) => ({
+						...prev,
+						[employeeNo]: remainingTime,
+					}));
+					toast.error(
+						`Employee ${employeeNo} must wait ${remainingTime} seconds before logging out.`
+					);
+					return;
 				}
+
+				// Handle other known error messages
+				if (error.message.includes("Employee ID not found")) {
+					toast.error(
+						"Employee ID does not exist. Please try again."
+					);
+					return;
+				}
+
+				if (error.message.includes("already log out")) {
+					toast.error("You are already logged out.");
+					return;
+				}
+
+				if (error.message.includes("already logged today")) {
+					toast.error("Employee has already logged today.");
+					return;
+				}
+
+				// Default fallback for unknown server errors
+				toast.error(error.message || "An unexpected error occurred.");
 			} else {
-				toast.error("An unexpected error occurred.");
+				// Handle errors that are not instances of Error
+				toast.error("Something went wrong. Please try again later.");
 			}
 		},
 	});
@@ -122,10 +140,7 @@ const Scanner = () => {
 												e.target.value.toUpperCase();
 											field.onChange(upperCaseValue);
 										}}
-										ref={(el) => {
-											field.ref(el);
-											inputRef.current = el;
-										}}
+										ref={inputRef}
 										placeholder="(e.g FI0830)"
 										autoComplete="off"
 									/>
@@ -134,7 +149,22 @@ const Scanner = () => {
 							</FormItem>
 						)}
 					/>
-					<Button type="submit">Scan</Button>
+					<Button
+						type="submit"
+						disabled={
+							countdowns[form.getValues("employeeNo")] !==
+								undefined &&
+							countdowns[form.getValues("employeeNo")] > 0
+						}
+					>
+						{countdowns[form.getValues("employeeNo")] !==
+							undefined &&
+						countdowns[form.getValues("employeeNo")] > 0
+							? `Wait ${
+									countdowns[form.getValues("employeeNo")]
+							  }s`
+							: "Scan"}
+					</Button>
 				</form>
 			</Form>
 		</>

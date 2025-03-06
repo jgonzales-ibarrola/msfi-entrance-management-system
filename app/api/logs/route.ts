@@ -4,20 +4,14 @@ import { NextResponse } from "next/server";
 export async function GET() {
 	try {
 		const today = new Date();
-		today.setHours(0, 0, 0, 0); // Set to start of the day
+		today.setHours(0, 0, 0, 0); // Start of the day
 
 		const logs = await prisma.employeeLog.findMany({
 			where: {
-				time_in: {
-					gte: today, // Get logs from today onwards
-				},
+				time_in: { gte: today }, // Get today's logs
 			},
-			include: {
-				employee: true,
-			},
-			orderBy: {
-				time_in: "desc",
-			},
+			include: { employee: true },
+			orderBy: { time_in: "desc" },
 		});
 
 		return NextResponse.json(logs);
@@ -36,6 +30,7 @@ export async function POST(req: Request) {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0); // Start of the day
 
+		// Find the employee
 		const employee = await prisma.employee.findUnique({
 			where: { emp_no: employeeNo },
 		});
@@ -47,26 +42,36 @@ export async function POST(req: Request) {
 			);
 		}
 
+		// Find the most recent log for today
 		const existingLog = await prisma.employeeLog.findFirst({
 			where: {
 				employeeNo,
-				time_in: { gte: today }, // Fetch today's logs
+				time_in: { gte: today }, // Get today's logs
 			},
+			orderBy: { time_in: "desc" },
 		});
 
+		// If employee already logged in & out today, prevent re-logging
+		if (existingLog?.time_in && existingLog?.time_out) {
+			return NextResponse.json(
+				{ message: "You are already logged out." },
+				{ status: 400 }
+			);
+		}
+
+		// If no log exists for today, create a new log entry
 		if (!existingLog) {
-			// First log-in of the day
-			const createLog = await prisma.employeeLog.create({
+			const newLog = await prisma.employeeLog.create({
 				data: {
 					time_in: now,
 					employeeNo,
-					isRestricted: true, // Initially restrict logout
+					isRestricted: true, // Restrict logout initially
 				},
 			});
-
-			return NextResponse.json(createLog, { status: 201 });
+			return NextResponse.json(newLog, { status: 201 });
 		}
 
+		// Check if employee is within the 30-second restriction period
 		const thirtySecondsLater = new Date(
 			existingLog.time_in.getTime() + 30 * 1000
 		);
@@ -76,7 +81,6 @@ export async function POST(req: Request) {
 
 		if (existingLog.time_in && !existingLog.time_out) {
 			if (existingLog.isRestricted && now < thirtySecondsLater) {
-				// Send remaining countdown time
 				return NextResponse.json(
 					{
 						message: `You must wait ${remainingTime} seconds before logging out.`,
@@ -97,7 +101,7 @@ export async function POST(req: Request) {
 		}
 
 		return NextResponse.json(
-			{ message: "Employee already logged today." },
+			{ message: "Unexpected error occurred." },
 			{ status: 400 }
 		);
 	} catch (error: any) {
