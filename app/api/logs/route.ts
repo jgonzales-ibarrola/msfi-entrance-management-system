@@ -3,7 +3,15 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
 	try {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0); // Set to start of the day
+
 		const logs = await prisma.employeeLog.findMany({
+			where: {
+				time_in: {
+					gte: today, // Get logs from today onwards
+				},
+			},
 			include: {
 				employee: true,
 			},
@@ -15,7 +23,7 @@ export async function GET() {
 		return NextResponse.json(logs);
 	} catch (error) {
 		return NextResponse.json(
-			{ message: "Failed to fetch logs." },
+			{ message: "Failed to fetch today's logs." },
 			{ status: 500 }
 		);
 	}
